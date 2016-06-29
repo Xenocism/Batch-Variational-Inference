@@ -5,17 +5,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import mixture
 
-# Seed a Guassian Mixture Model with three nodes centered around 0, 10, and 30
+def data():
 
-np.random.seed(1)
-model = mixture.GMM(n_components = 3)
-obs = np.concatenate((np.random.randn(100, 1), 10 + np.random.randn(300, 1)))
-obs = np.concatenate((obs, 30 + np.random.randn(200, 1)))
-model.fit(obs)
+    # Seed a Guassian Mixture Model with three nodes centered around (0,0), (10,10), and (30,30)
 
-# Sample and display from GMM
+    np.random.seed(1)
+    model = mixture.GMM(n_components = 3)
+    obs1 = np.concatenate((np.random.randn(100, 1),np.random.randn(100, 1)),axis = 1)
+    obs2 = np.concatenate((10 + np.random.randn(300, 1), 10 + np.random.randn(300, 1)),axis = 1)
+    obs3 = np.concatenate((30 + np.random.randn(200, 1), 30 + np.random.randn(200, 1)), axis = 1)
+    obs = np.concatenate((obs1, obs2))
+    obs = np.concatenate((obs, obs3))
+    model.fit(obs)
 
-x = model.sample(n_samples = 400)
-plt.plot(x, 'o')
-#plt.show()
+    # Sample and display from GMM
 
+    x = model.sample(n_samples = 300)
+    return x
+
+if __name__ == "__main__":
+    
+    x = data()
+    plt.plot(x[:,0],x[:,1],'o')
+    plt.show()
