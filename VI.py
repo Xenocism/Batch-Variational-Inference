@@ -23,8 +23,29 @@ def data():
     x = model.sample(n_samples = 300)
     return x
 
+def var(data):
+    
+    # Means
+    m1 = np.mean(data[:,0])
+    m2 = np.mean(data[:,1])
+    
+    # Sums
+    s1 = 0.0
+    s2 = 0.0
+
+    for i in range(len(data)):
+        s1 += ((data[i,0] - m1) ** 2)
+        s2 += ((data[i,1] - m2) ** 2)
+
+    # Normalize
+    s1 = s1 / len(data)
+    s2 = s2 / len(data)
+
+    return np.array([s1, s2])
+
 if __name__ == "__main__":
     
     x = data()
     plt.plot(x[:,0],x[:,1],'o')
     plt.show()
+    print(var(x))
