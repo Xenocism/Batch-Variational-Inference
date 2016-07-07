@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import VI
 import math
-from scipy.special import digamma
+from scipy.special import digamma, gamma
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -33,7 +33,7 @@ class GaussianMixtureModelCAVI(object):
 
     def update(self):
         
-        # Phi updates (i: data, j: clusters, k: data dimensionality)
+        #* Phi updates (i: data, j: clusters, k: data dimensionality)
         for i in range(len(self.X)):
             for j in range(self.K):
                 for k in range(len((self.X).T)):
@@ -49,7 +49,7 @@ class GaussianMixtureModelCAVI(object):
                 for k in range(len((self.X).T)):
                     self.phi[i, j, k] = self.phi[i, j, k] / (.5 * sum)
 
-        # Mu and Var updates
+        #* Mu and Var updates
         sum1 = np.zeros((self.K, len((self.X).T)))
         sum2 = np.zeros((self.K, len((self.X).T)))
 
@@ -65,14 +65,58 @@ class GaussianMixtureModelCAVI(object):
                 (self.mu)[i, j] = (sum1[i, j] / ((1 / self.SigSqr[j]) + sum2[i, j]))
                 (self.var)[i, j] = (1 / ((1 / self.SigSqr[j]) + sum2[i, j]))
 
-        # Return ELBO
-        # return (math.log() + )
+        #* Return ELBO
+        return self.ELBO()
+        
+    def ELBO(self):
+        
+        # Assume alpha values [prior distribution] are all 1
+        alpha = np.ones(self.K)
 
+        # First ELBO addition term
+        add1 = 0.0
+
+        # Second ELBO addition term
+        add2 = 0.0
+        for i in range(len(self.X)):
+            for j in range(self.K):
+                for k in range(len((self.X).T)):
+                    add2 += self.phi[i, j, k] * (digamma(alpha[j]) - digamma(np.sum(alpha)))
+
+        # Third ELBO addition term
+        sumpi = 0.0
+        multi = 1.0
+        for i in range(self.K):
+            sumpi += (digamma(alpha[i]) - digamma(np.sum(alpha)))
+            multi *= gamma(alpha[i])
+        add3 = (math.log(gamma(np.sum(alpha) / multi)) + ((alpha[0] - 1) * sumpi))
+        
+        # Fourth ELBO additon term
+        add4 = 0.0
+
+        # First ELBO Subtraction term
+        sub1 = 0.0
+        for i in range(len(self.X)):
+            for j in range(self.K):
+                for k in range(len((self.X).T)):
+                    sub1 += self.phi[i, j, k] * math.log(self.phi[i, j, k])
+
+        # Second ELBO Subtraction term
+        sub2 = 0.0
+        for i in range(self.K):
+            sub2 += (((alpha[0] - 1) * (digamma(alpha[i]) - digamma(np.sum(alpha)))) + math.log(gamma(np.sum(alpha) / multi)))
+        
+        
+        # Third ELBO Subtraction term
+        sub3 = 0.0
+
+        return add1 + add2 + add3 + add4 - sub1 - sub2 - sub3
+    
     def Init_Mu(self, x):
         
         # (Temporary) Actual Values
         # Three farthest from each other Hueristic will be here
-        return np.array(([0.0, 0.0], [10.0, 10.0], [30.0, 30.0]))
+        return np.array(([0.0, 1.0], [8.0, 11.0], [20.0, 33.0]))
     
     
 if __name__ == "__main__":
@@ -85,13 +129,12 @@ if __name__ == "__main__":
     test = GaussianMixtureModelCAVI(x = data, k = k, SigSqr = s2)
     
     # Test and plot the Coordinate Ascent
-    iter = 100
+    iter = 10
     data = np.zeros(iter)
-    axis = np.linspace(0,iter,1)
+    axis = np.linspace(0,iter,10)
 
-    test.update()
+    for i in range(iter):
+        data[i] = test.update()
 
-    #for i in range(iter):
-    #    data[i] = test.update()
-
-    #plt.plot(axis,data,'o')
+    plt.plot(axis,data,'o')
+    plt.show()
