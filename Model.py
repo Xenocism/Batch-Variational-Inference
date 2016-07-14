@@ -74,7 +74,20 @@ class GaussianMixtureModelCAVI(object):
         alpha = np.ones(self.K)
 
         # First ELBO addition term
+        # Internal Summations and Initialiizations
         add1 = 0.0
+        Nk = np.sum(self.phi, axis = 0)
+        Xbar = np.zeros((3,2))
+        for i in range(len(self.X)):
+            for j in range(self.K):
+                for k in range(len((self.X).T)):
+                    Xbar[j, k] += (self.phi[i,j,k] * self.X[i,k])
+        Xbar = (1 / Nk) * Xbar
+
+        for i in range(self.K):
+            for j in range(len((self.X).T)):
+                add1 += (Nk[i, j] * (-1 * self.var[i, j] * (((Xbar[i, j] - self.mu[i, j]).T) * (Xbar[i, j] - self.mu[i, j])) - self.K * math.log(2 * math.pi)))
+        add1 = (add1 / 2)
 
         # Second ELBO addition term
         add2 = 0.0
@@ -93,6 +106,10 @@ class GaussianMixtureModelCAVI(object):
         
         # Fourth ELBO additon term
         add4 = 0.0
+        for i in range(self.K):
+            for j in range(len((self.X).T)):
+                add4 += (Nk[i, j] * (-1 * self.var[i, j] * (((Xbar[i, j] - self.mu[i, j]).T) * (Xbar[i, j] - self.mu[i, j]))))
+        add4 = (add4 / 2)
 
         # First ELBO Subtraction term
         sub1 = 0.0
@@ -106,19 +123,21 @@ class GaussianMixtureModelCAVI(object):
         for i in range(self.K):
             sub2 += (((alpha[0] - 1) * (digamma(alpha[i]) - digamma(np.sum(alpha)))) + math.log(gamma(np.sum(alpha) / multi)))
         
-        
         # Third ELBO Subtraction term
         sub3 = 0.0
+        for j in range(self.K):
+                for k in range(len((self.X).T)):
+                    sub3 += (-(self.K / 2) - (1/2) * (math.log(2 * math.pi * self.var[j, k]) + 1))
 
-        return add1 + add2 + add3 + add4 - sub1 - sub2 - sub3
-    
+        # return
+        return (add1 + add2 + add3 + add4 - sub1 - sub2 - sub3)
+
     def Init_Mu(self, x):
         
-        # (Temporary) Actual Values
+        # (Temporary) Actual/Close Values
         # Three farthest from each other Hueristic will be here
-        return np.array(([0.0, 1.0], [8.0, 11.0], [20.0, 33.0]))
-    
-    
+        return np.array(([1.0, 3.0], [8.0, 12.0], [18.0, 33.0]))
+
 if __name__ == "__main__":
 
     data = VI.data()        # Samples from the custom GMM in VI.py
@@ -129,9 +148,9 @@ if __name__ == "__main__":
     test = GaussianMixtureModelCAVI(x = data, k = k, SigSqr = s2)
     
     # Test and plot the Coordinate Ascent
-    iter = 10
+    iter = 50
     data = np.zeros(iter)
-    axis = np.linspace(0,iter,10)
+    axis = np.linspace(0,iter,50)
 
     for i in range(iter):
         data[i] = test.update()
